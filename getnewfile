@@ -1,0 +1,9 @@
+#!/usr/bin/env sh
+
+if [ -z $1 ];then
+    HOST=www.vpngate.net
+else
+    HOST=$1
+fi
+
+curl  http://$HOST/api/iphone/ -o "$TMPCFGPATH""vpn.csv"

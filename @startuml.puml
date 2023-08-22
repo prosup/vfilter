@@ -1,0 +1,19 @@
+@startuml initdb
+actor dbmng 
+database gs 
+database bs 
+
+
+dbmng-> bs :is table avalible
+alt no
+dbmng-> bs :create database
+
+else yes
+dbmng->bs :clear all bs
+
+end alt
+
+dbmng-> bs :init bs from vpn.cvs
+activate bs
+
+@enduml
