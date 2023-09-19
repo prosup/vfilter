@@ -4,6 +4,9 @@ import sqlite3
 import os.path
 import os
 import base64
+import socket
+
+
 
 #validate server from database
 #we need multiple thread access server port,to determine the server is alive
@@ -53,6 +56,19 @@ class SERVER:
         return 
 
     def validate(self):
+        if (self.protocol == "tcp"):
+            socket_type=socket.SOCK_STREAM
+        else:
+            socket_type=socket.SOCK_DGRAM
+        sk=socket.socket(socket.AF_INET,socket_type)
+        sk.settimeout(0.5)
+        try:
+            ret=sk.connect_ex((self.addr,int(self.port)))
+            if(0==ret):
+                print("G:"+self.addr+":"+self.port)
+        except Exception as e:
+            print(e)
+        sk.close()
 
         return
 
@@ -68,7 +84,8 @@ class SERVER_DB:
         TotalTraffic,LogType,Operator,Message,OpenVPN_ConfigData_Base64,
         usable);
         '''    
-    ip_exist ="SELECT rowid FROM \"server\" WHERE IP="
+    ip_exist ="SELECT * FROM \"server\" WHERE IP="
+    config_data ="SELECT OpenVPN_ConfigData_Base64 FROM \"server\" "
 
     insert_records = '''
         INSERT INTO server (
@@ -87,6 +104,7 @@ class SERVER_DB:
     def validateServer(self,row):
         sv=SERVER(row)
         sv.solvConfig()
+        sv.validate()
 
         return
 
@@ -101,13 +119,18 @@ class SERVER_DB:
         return lists
     
     def validateRow(self,row):#if the row data is avaible
-        if "#" in row[0]:
+        if "#" in row[0]:#the 1st row
             return False
-        if "*" in row[0]:
+        if "*" in row[0]:#the header row
             return False
         try:
             sql=self.ip_exist+"\""+row[1]+"\""
-            iprow=self.cur.execute(sql).fetchall()
+            ret=self.cur.execute(sql)
+            iprow=ret.fetchall() 
+#            print(iprow)
+#            config=iprow[0][14]
+#            print(type(config))
+
             if ( len(iprow) == 0 ):#didn't find same ip address ,the row is valid
                 return True
             else:
@@ -136,18 +159,18 @@ class SERVER_DB:
     def addServer(self,s):
         row=s.split(",")
         if self.validateRow(row):
-            self.validateServer(row[14])
+#            self.validateServer(row[14])
             self.cur.execute(self.insert_records,row)
         return 
 
     def updateDatabase(self,server="www.vpngate.net"):
         self.createDatabase()
         list=os.popen("curl http://"+server+"/api/iphone/").readlines()
+#use local file to accelerate debuging process
+#        list=os.popen("cat vpn.csv").readlines()
 
         for line in list:
             try:
-#                self.cur.execute()
-#                self.validateServer(line)
                 self.addServer(line)
             except Exception as e:
                 print(e)
@@ -166,13 +189,18 @@ class SERVER_DB:
 
         return
     def itor(self):
-
+        ret=self.cur.execute(self.config_data)
+        #itor all server in database ,check it's connectivity
+        #flag the good server
+        for row in ret.fetchall():
+            self.validateServer(row[0]) 
         return
 
 def main():
 
     sdb=SERVER_DB()
     sdb.updateDatabase("222.255.11.117:54621")
+    sdb.itor()
 #    sdb.delServer("1")
 #    sdb.removeDup()
 
