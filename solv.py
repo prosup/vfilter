@@ -7,6 +7,13 @@ import base64
 import socket
 
 
+dpath="/tmp/vfilter/"
+mode = 0o777
+try :
+    os.mkdir(dpath,mode)
+    logfd=open("/tmp/vfilter/op.log","a")
+except Exception as e :
+    print(e)
 
 #validate server from database
 #we need multiple thread access server port,to determine the server is alive
@@ -14,7 +21,8 @@ class SERVER:
 
     def __init__(self,raw):
         self.raw=raw
-        
+        #init the tmp directory once
+
 
     def rawData(self):
         return self.raw
@@ -24,21 +32,17 @@ class SERVER:
         
 #write tmp.ovpn for grep & awk
         dpath="/tmp/vfilter/"
-        mode = 0o777
-        try :
-            os.mkdir(dpath,mode)
-        except Exception as e :
-            print(e)
         fpath=dpath+"tmp.ovpn"
         try:
             cfile=open(fpath,"wb+")
             cfile.write(self.config)
         except Exception as e:
-            print(e)
+            print(e,file=logfd)
         self.solvePort()
         self.solveAddr()
         self.solveProtocol()
-        os.rename(fpath,dpath+self.addr+".ovpn")
+        self.config=dpath+self.addr+".ovpn"
+        os.rename(fpath,self.config)
     
     def solveProtocol(self):
         cmd="cat /tmp/vfilter/tmp.ovpn | grep ^proto | awk '{print $2}'"
@@ -66,11 +70,15 @@ class SERVER:
             ret=sk.connect_ex((self.addr,int(self.port)))
             if(0==ret):
                 print("G:"+self.addr+":"+self.port)
+                return 0
+            else:
+                return -1
+
         except Exception as e:
             print(e)
         sk.close()
 
-        return
+        return -1
 
 ## manage server database
 class SERVER_DB:
@@ -95,6 +103,7 @@ class SERVER_DB:
         TotalTraffic,LogType,Operator,Message,OpenVPN_ConfigData_Base64) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
         '''
     select_all = "SELECT * FROM server" 
+    search_rowid_by_config = "SELECT rowid FROM server where OpenVPN_ConfigData_Base64=" 
     delete_rowid = "delete from server where rowid="
     update_rowid = "update server set update=\'True\' where rowid="
     remove_dup = '''delete from server  
@@ -104,9 +113,10 @@ class SERVER_DB:
     def validateServer(self,row):
         sv=SERVER(row)
         sv.solvConfig()
-        sv.validate()
-
-        return
+        if 0 == sv.validate():
+            return (sv,0)
+        else:
+            return (sv,-1)
 
     def validateDatabase(self):#if the datebase is avalible
         if not os.path.isfile("vfilter.db"):
@@ -165,9 +175,9 @@ class SERVER_DB:
 
     def updateDatabase(self,server="www.vpngate.net"):
         self.createDatabase()
-        list=os.popen("curl http://"+server+"/api/iphone/").readlines()
+#        list=os.popen("curl http://"+server+"/api/iphone/").readlines()
 #use local file to accelerate debuging process
-#        list=os.popen("cat vpn.csv").readlines()
+        list=os.popen("cat vpn.csv").readlines()
 
         for line in list:
             try:
@@ -193,11 +203,19 @@ class SERVER_DB:
         #itor all server in database ,check it's connectivity
         #flag the good server
         for row in ret.fetchall():
-            self.validateServer(row[0]) 
+            (sv,result)=self.validateServer(row[0]) 
+#            print(sv.config) 
+            if result == -1:
+                os.remove(sv.config)
         return
-
+    def getRowid(self,row):
+        ret=self.cur.execute(self.search_rowid_by_config+row)
+        rowid=ret.fetchone()
+        if len(rowid)==0 :
+            return -1
+        else:
+            return rowid[0]
 def main():
-
     sdb=SERVER_DB()
     sdb.updateDatabase("222.255.11.117:54621")
     sdb.itor()
