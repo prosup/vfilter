@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+rm -rf /tmp/vfilter/*
+rm -rf vfilter.db
+rm -rf vpn.csv
+./getnewfile 222.255.11.117:54621
+./solv.py

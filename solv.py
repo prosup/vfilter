@@ -69,7 +69,7 @@ class SERVER:
         try:
             ret=sk.connect_ex((self.addr,int(self.port)))
             if(0==ret):
-                print("G:"+self.addr+":"+self.port)
+                print(self.addr+":"+self.port)
                 return 0
             else:
                 return -1
