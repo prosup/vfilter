@@ -217,7 +217,12 @@ class SERVER_DB:
             return rowid[0]
 def main():
     sdb=SERVER_DB()
-    sdb.updateDatabase("222.255.11.117:54621")
+#    sdb.updateDatabase("222.255.11.117:54621")
+    sdb.updateDatabase("103.201.129.226:14684")
+#    sdb.updateDatabase("109.111.243.206:17579")
+#    sdb.updateDatabase("78.142.193.246:33304")
+#    sdb.updateDatabase("126.11.252.230:56912")
+#    sdb.updateDatabase("122.208.194.111:54239")
     sdb.itor()
 #    sdb.delServer("1")
 #    sdb.removeDup()
