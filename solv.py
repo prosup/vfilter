@@ -7,19 +7,23 @@ import base64
 import socket
 
 
-dpath="/tmp/vfilter/"
+dpath= os.getcwd()+"/tmp/"
+logfile="op.log"
 mode = 0o777
 try :
     os.mkdir(dpath,mode)
-    logfd=open("/tmp/vfilter/op.log","a")
+#    logfd=open("/tmp/vfilter/op.log","a")
+    logfd=open(dpath+logfile,"a")
 except Exception as e :
-    print(e)
+    print(e) 
 
 #validate server from database
 #we need multiple thread access server port,to determine the server is alive
 class SERVER:
 
     def __init__(self,raw):
+        self.dpath= os.getcwd()+"/tmp/"
+        self.fpath= self.dpath+"tmp.ovpn"
         self.raw=raw
         #init the tmp directory once
 
@@ -28,34 +32,35 @@ class SERVER:
         return self.raw
     
     def solvConfig(self):
-        self.config=base64.b64decode(self.raw)
-        
+        self.configdata=base64.b64decode(self.raw)
 #write tmp.ovpn for grep & awk
-        dpath="/tmp/vfilter/"
-        fpath=dpath+"tmp.ovpn"
+#        dpath="/tmp/vfilter/"
         try:
-            cfile=open(fpath,"wb+")
-            cfile.write(self.config)
+            cfile=open(self.fpath,"wb+")
+            cfile.write(self.configdata)
         except Exception as e:
             print(e,file=logfd)
         self.solvePort()
         self.solveAddr()
         self.solveProtocol()
-        self.config=dpath+self.addr+".ovpn"
-        os.rename(fpath,self.config)
+        self.config=self.dpath+self.addr+".ovpn"
+        os.rename(self.fpath,self.config)
     
     def solveProtocol(self):
-        cmd="cat /tmp/vfilter/tmp.ovpn | grep ^proto | awk '{print $2}'"
+
+        cmd="cat "+ self.fpath +" | grep ^proto | awk '{print $2}'"
         self.protocol=os.popen(cmd).readline().split("\n")[0]
         return 
 
     def solvePort(self):
-        cmd="cat /tmp/vfilter/tmp.ovpn | grep ^remote | awk '{print $3}'"
+#        cmd="cat /tmp/vfilter/tmp.ovpn | grep ^remote | awk '{print $3}'"
+        cmd="cat "+ self.fpath +" | grep ^remote | awk '{print $3}'"
         self.port=os.popen(cmd).readline().split("\n")[0]
         return 
 
     def solveAddr(self):
-        cmd="cat /tmp/vfilter/tmp.ovpn | grep ^remote | awk '{print $2}'"
+#        cmd="cat /tmp/vfilter/tmp.ovpn | grep ^remote | awk '{print $2}'"
+        cmd="cat "+ self.fpath +" | grep ^remote | awk '{print $2}'"
         self.addr=os.popen(cmd).readline().split("\n")[0]
         return 
 
@@ -218,8 +223,9 @@ class SERVER_DB:
 def main():
     sdb=SERVER_DB()
 #    sdb.updateDatabase("222.255.11.117:54621")
-    sdb.updateDatabase("103.201.129.226:14684")
-#    sdb.updateDatabase("109.111.243.206:17579")
+#    sdb.updateDatabase("146.70.205.2:6283")
+#    sdb.updateDatabase("103.201.129.226:14684")
+    sdb.updateDatabase("109.111.243.206:17579")
 #    sdb.updateDatabase("78.142.193.246:33304")
 #    sdb.updateDatabase("126.11.252.230:56912")
 #    sdb.updateDatabase("122.208.194.111:54239")
