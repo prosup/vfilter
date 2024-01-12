@@ -8,13 +8,12 @@ import socket
 from concurrent.futures import ThreadPoolExecutor,as_completed
 
 
-dpath= os.getcwd()+"/tmp/"
+logpath= os.getcwd()
 logfile="op.log"
 mode = 0o777
 try :
-    os.mkdir(dpath,mode)
-#    logfd=open("/tmp/vfilter/op.log","a")
-    logfd=open(dpath+logfile,"a")
+    os.mkdir(logpath,mode)
+    logfd=open(logpath+logfile,"a")
 except Exception as e :
     print(e) 
 
@@ -36,7 +35,6 @@ class SERVER:
     def solvConfig(self):
         self.configdata=base64.b64decode(self.raw)
 #write tmp.ovpn for grep & awk
-#        dpath="/tmp/vfilter/"
         try:
             cfile=open(self.fpath,"wb+")
             cfile.write(self.configdata)
@@ -55,13 +53,11 @@ class SERVER:
         return 
 
     def solvePort(self):
-#        cmd="cat /tmp/vfilter/tmp.ovpn | grep ^remote | awk '{print $3}'"
         cmd="cat "+ self.fpath +" | grep ^remote | awk '{print $3}'"
         self.port=os.popen(cmd).readline().split("\n")[0]
         return 
 
     def solveAddr(self):
-#        cmd="cat /tmp/vfilter/tmp.ovpn | grep ^remote | awk '{print $2}'"
         cmd="cat "+ self.fpath +" | grep ^remote | awk '{print $2}'"
         self.addr=os.popen(cmd).readline().split("\n")[0]
         return 
@@ -144,9 +140,6 @@ class SERVER_DB:
             sql=self.ip_exist+"\""+row[1]+"\""
             ret=self.cur.execute(sql)
             iprow=ret.fetchall() 
-#            print(iprow)
-#            config=iprow[0][14]
-#            print(type(config))
 
             if ( len(iprow) == 0 ):#didn't find same ip address ,the row is valid
                 return True
@@ -182,7 +175,6 @@ class SERVER_DB:
 
     def updateDatabase(self,server="www.vpngate.net"):
         self.createDatabase()
-#        list=os.popen("curl http://"+server+"/api/iphone/").readlines()
 #use local file to accelerate debuging process
         list=os.popen("cat vpn.csv").readlines()
 
@@ -191,7 +183,6 @@ class SERVER_DB:
                 self.addServer(line)
             except Exception as e:
                 print(e)
-#                print(line.split(","))
 
         self.con.commit()
     # closing the database connection
@@ -209,14 +200,7 @@ class SERVER_DB:
         ret=self.cur.execute(self.config_data)
         #itor all server in database ,check it's connectivity
         #flag the good server
-
-#         for row in ret.fetchall():
-#             (sv,result)=self.validateServer(row[0]) 
-# #            print(sv.config) 
-#             if result == -1:
-#                 os.remove(sv.config)
-#         return
-    
+#use threadpool to speed up validating process   
         with ThreadPoolExecutor(max_workers=15) as t: 
             obj_list = []
             for row in ret.fetchall():
@@ -237,6 +221,7 @@ class SERVER_DB:
             return rowid[0]
 def main():
     sdb=SERVER_DB()
+    #TODO:upstream server should be input as args
 #    sdb.updateDatabase("222.255.11.117:54621")
 #    sdb.updateDatabase("146.70.205.2:6283")
 #    sdb.updateDatabase("103.201.129.226:14684")
