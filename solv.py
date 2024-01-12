@@ -5,6 +5,7 @@ import os.path
 import os
 import base64
 import socket
+from concurrent.futures import ThreadPoolExecutor,as_completed
 
 
 dpath= os.getcwd()+"/tmp/"
@@ -23,7 +24,8 @@ class SERVER:
 
     def __init__(self,raw):
         self.dpath= os.getcwd()+"/tmp/"
-        self.fpath= self.dpath+"tmp.ovpn"
+        name=str(hash(raw))
+        self.fpath= self.dpath+name+".ovpn"
         self.raw=raw
         #init the tmp directory once
 
@@ -207,12 +209,25 @@ class SERVER_DB:
         ret=self.cur.execute(self.config_data)
         #itor all server in database ,check it's connectivity
         #flag the good server
-        for row in ret.fetchall():
-            (sv,result)=self.validateServer(row[0]) 
-#            print(sv.config) 
-            if result == -1:
-                os.remove(sv.config)
+
+#         for row in ret.fetchall():
+#             (sv,result)=self.validateServer(row[0]) 
+# #            print(sv.config) 
+#             if result == -1:
+#                 os.remove(sv.config)
+#         return
+    
+        with ThreadPoolExecutor(max_workers=10) as t: 
+            obj_list = []
+            for row in ret.fetchall():
+               obj=t.submit(self.validateServer,row[0])
+               obj_list.append(obj)
+            for future in as_completed(obj_list):
+                (sv,result)=future.result()
+                if result == -1:
+                    os.remove(sv.config)
         return
+    
     def getRowid(self,row):
         ret=self.cur.execute(self.search_rowid_by_config+row)
         rowid=ret.fetchone()
