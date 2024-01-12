@@ -72,7 +72,7 @@ class SERVER:
         else:
             socket_type=socket.SOCK_DGRAM
         sk=socket.socket(socket.AF_INET,socket_type)
-        sk.settimeout(0.5)
+        sk.settimeout(3)
         try:
             ret=sk.connect_ex((self.addr,int(self.port)))
             if(0==ret):
@@ -217,7 +217,7 @@ class SERVER_DB:
 #                 os.remove(sv.config)
 #         return
     
-        with ThreadPoolExecutor(max_workers=10) as t: 
+        with ThreadPoolExecutor(max_workers=15) as t: 
             obj_list = []
             for row in ret.fetchall():
                obj=t.submit(self.validateServer,row[0])
