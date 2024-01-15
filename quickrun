@@ -1,8 +1,14 @@
 #!/usr/bin/env sh
+#delete all openvpn connection
+nmcli connection show | grep vpn | awk '{print $2}' | xargs nmcli connection delete
 rm -rf /tmp/vfilter/*
 rm -rf vfilter.db
 rm -rf vpn.csv
 ./getnewfile 138.201.173.225:58292 
 ./solv.py
 #import result ovpn to system
-#for file in $(ls -1);do nmcli connection import type openvpn file $file;done
+pushd tmp 
+for file in $(ls -1 *.ovpn);
+do 
+    nmcli connection import type openvpn file $file;
+done
