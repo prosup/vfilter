@@ -6,7 +6,9 @@ import os
 import base64
 import socket
 from concurrent.futures import ThreadPoolExecutor,as_completed
-
+import subprocess
+import argparse
+import uuid
 
 logpath= os.getcwd()
 logfile="op.log"
@@ -23,7 +25,8 @@ class SERVER:
 
     def __init__(self,raw):
         self.dpath= os.getcwd()+"/tmp/"
-        name=str(hash(raw))
+#        name=str(hash(raw))
+        name=str(uuid.uuid4())
         self.fpath= self.dpath+name+".ovpn"
         self.raw=raw
         #init the tmp directory once
@@ -43,22 +46,23 @@ class SERVER:
         self.solvePort()
         self.solveAddr()
         self.solveProtocol()
-        self.config=self.dpath+self.addr+".ovpn"
+#        self.config=self.dpath+self.addr+".ovpn"
+        self.config=os.path.join(self.dpath, self.addr + ".ovpn")
         os.rename(self.fpath,self.config)
     
     def solveProtocol(self):
 
-        cmd="cat "+ self.fpath +" | grep ^proto | awk '{print $2}'"
+        cmd=f"cat {self.fpath} | grep ^proto | awk '{{print $2}}'"
         self.protocol=os.popen(cmd).readline().split("\n")[0]
         return 
 
     def solvePort(self):
-        cmd="cat "+ self.fpath +" | grep ^remote | awk '{print $3}'"
+        cmd=f"cat {self.fpath} | grep ^remote | awk '{{print $3}}'"
         self.port=os.popen(cmd).readline().split("\n")[0]
         return 
 
     def solveAddr(self):
-        cmd="cat "+ self.fpath +" | grep ^remote | awk '{print $2}'"
+        cmd=f"cat {self.fpath} | grep ^remote | awk '{{print $2}}'"
         self.addr=os.popen(cmd).readline().split("\n")[0]
         return 
 
@@ -176,7 +180,8 @@ class SERVER_DB:
     def updateDatabase(self,server="www.vpngate.net"):
         self.createDatabase()
 #use local file to accelerate debuging process
-        list=os.popen("cat vpn.csv").readlines()
+        list=os.popen("curl http://"+server+"/api/iphone/").readlines()
+#        list=os.popen("cat vpn.csv").readlines()
 
         for line in list:
             try:
@@ -221,11 +226,15 @@ class SERVER_DB:
             return rowid[0]
 def main():
     sdb=SERVER_DB()
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--srchost", type=str, help="Input the source host.",default="109.111.243.206:17579")
+    args = parser.parse_args()
     #TODO:upstream server should be input as args
 #    sdb.updateDatabase("222.255.11.117:54621")
 #    sdb.updateDatabase("146.70.205.2:6283")
 #    sdb.updateDatabase("103.201.129.226:14684")
-    sdb.updateDatabase("109.111.243.206:17579")
+#    sdb.updateDatabase("109.111.243.206:17579")
+    sdb.updateDatabase(args.srchost)
 #    sdb.updateDatabase("78.142.193.246:33304")
 #    sdb.updateDatabase("126.11.252.230:56912")
 #    sdb.updateDatabase("122.208.194.111:54239")

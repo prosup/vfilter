@@ -1,7 +1,7 @@
 #!/usr/bin/env sh
 #delete all openvpn connection
 nmcli connection show | grep vpn | awk '{print $2}' | xargs nmcli connection delete
-rm -rf /tmp/vfilter/*
+rm -rf tmp/*
 rm -rf vfilter.db
 rm -rf vpn.csv
 ./getnewfile 138.201.173.225:58292 
