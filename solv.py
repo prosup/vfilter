@@ -180,8 +180,8 @@ class SERVER_DB:
     def updateDatabase(self,server="www.vpngate.net"):
         self.createDatabase()
 #use local file to accelerate debuging process
-        list=os.popen("curl http://"+server+"/api/iphone/").readlines()
-#        list=os.popen("cat vpn.csv").readlines()
+#        list=os.popen("curl http://"+server+"/api/iphone/").readlines()
+        list=os.popen("cat vpn.csv").readlines()
 
         for line in list:
             try:
@@ -224,6 +224,33 @@ class SERVER_DB:
             return -1
         else:
             return rowid[0]
+        
+    def addHost(self):
+
+        return
+    
+    def getHosts(self):
+
+        return
+    
+    def deleteHost(self,host): 
+        return 
+    def validateHost(self,host,port):
+        sk=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        sk.settimeout(3)
+        try:
+            ret=sk.connect_ex(host,port)
+            if(0==ret):
+                print(self.addr+":"+self.port)
+                return 0
+            else:
+                return -1
+        except Exception as e:
+            print(e)
+        sk.close()
+        return
+
+    
 def main():
     sdb=SERVER_DB()
     parser = argparse.ArgumentParser()
