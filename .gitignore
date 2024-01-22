@@ -1,2 +1,5 @@
-vfilter.db
-vpn.csv
+*.db
+*.csv
+tmp/*
+__pycache__/*
+.vscode/*

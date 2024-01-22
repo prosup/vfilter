@@ -3,6 +3,7 @@ from dbapi import DatabaseManager
 from vserver import SERVER
 from concurrent.futures import ThreadPoolExecutor,as_completed
 import os
+import requests
 
 class ServerManager:
     def __init__(self, db_manager: DatabaseManager):
@@ -82,12 +83,25 @@ class ServerManager:
                 self.db_manager.execute_query(create_table_query)
             except Exception as e:
                 print(f"Error creating table: {e}\n")
+    def fetch_data(self,server):
+        url = f"http://{server}/api/iphone/"
+        headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
+        response = requests.get(url ,headers=headers)
+
+        if response.status_code == 200:
+        # 读取响应内容，按行拆分
+            data_lines = response.text.split('\n')
+            return data_lines
+        else:
+            print(f"Failed to fetch data. Status code: {response.status_code}")
+            return []
 
     def update_database(self, server):
         self.create_database()
         try:
-            with open("vpn.csv", "r") as file:
-                list_data = file.readlines()
+#            with open("vpn.csv", "r") as file:
+#                list_data = file.readlines()
+            list_data=self.fetch_data(server)
         except Exception as e:
             print(f"Error reading vpn.csv: {e}\n")
             return
