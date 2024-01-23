@@ -89,21 +89,16 @@ class SERVER:
     
     def validate(self):
         try:
-            socket_type = socket.SOCK_STREAM if self.protocol == "tcp" else socket.SOCK_DGRAM
+            socket_type = socket.SOCK_STREAM if self.protocol.lower() == "tcp" else socket.SOCK_DGRAM
+            address = (self.addr, int(self.port))
 
-            with socket.socket(socket.AF_INET, socket_type) as sk:
-                sk.settimeout(3)
-                address = (self.addr, int(self.port))
-                
-                ret = sk.connect_ex(address)
-                if ret == 0:
-                    print(f"{self.addr}:{self.port}")
-                    return 0
-                else:
-#                    print(f"Connection failed: {self.addr}:{self.port}, Error code: {ret}\n")
-                    return -1
+            with socket.create_connection(address, timeout=3) as sk:
+                print(f"Connection successful: {self.addr}:{self.port}")
+                return 0
 
+        except socket.error as e:
+            print(f"Connection failed: {self.addr}:{self.port}, Error: {e}")
+            return -1
         except Exception as e:
-            print(f"Error during validation: {e}\n")
-
-        return -1
+            print(f"Error during validation: {e}")
+            return -1
