@@ -4,6 +4,7 @@ from vserver import SERVER
 from concurrent.futures import ThreadPoolExecutor,as_completed
 import os
 import requests
+import logging
 
 class ServerManager:
     def __init__(self, db_manager: DatabaseManager):
@@ -24,6 +25,8 @@ class ServerManager:
         self.db_manager = db_manager 
         if not self.db_manager.validate_table("server"):
             self.db_manager.create_table(self.create_table)
+
+        logging.basicConfig(filename='server_manager.log', level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
     def validate_server(self, row):
         # Assuming SERVER class is defined elsewhere
@@ -51,7 +54,7 @@ class ServerManager:
 
 
         except Exception as e:
-            print(f"Error validating row: {e}\n")
+            logging.error(f"Error validating row: {e}")
             return False
         
 
@@ -86,14 +89,15 @@ class ServerManager:
     def fetch_data(self,server):
         url = f"http://{server}/api/iphone/"
         headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/58.0.3029.110 Safari/537.3'}
-        response = requests.get(url ,headers=headers)
-
-        if response.status_code == 200:
+#        response = requests.get(url ,headers=headers)
+        try:
+            response = requests.get(url, headers=headers)
+            response.raise_for_status()
         # 读取响应内容，按行拆分
             data_lines = response.text.split('\n')
             return data_lines
-        else:
-            print(f"Failed to fetch data. Status code: {response.status_code}")
+        except requests.RequestException as e:
+            logging.error(f"Failed to fetch data: {e}")
             return []
 
     def update_database(self, server):
@@ -121,7 +125,10 @@ class ServerManager:
         remove_dup = '''delete from server  
         where IP in (select IP from server group by IP having count(IP) > 1) 
         and rowid not in (select min(rowid) from server group by IP having count(IP) > 1 )'''
-        self.db_manager.execute_non_query(remove_dup)
+        try:
+            self.db_manager.execute_non_query(remove_dup)
+        except Exception as e:
+            logging.error(f"Error removing duplicates: {e}")
 
     def itor(self):
         try:
@@ -135,4 +142,4 @@ class ServerManager:
                     os.remove(sv.config)
 
         except Exception as e:
-            print(f"Error during iteration: {e}\n")
+            logging.error(f"Error during iteration: {e}")

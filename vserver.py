@@ -8,6 +8,7 @@ import socket
 from concurrent.futures import ThreadPoolExecutor,as_completed
 import uuid
 from pathlib import Path
+import logging
 
 class SERVER:
     TMP_DIR = "tmp"
@@ -93,12 +94,12 @@ class SERVER:
             address = (self.addr, int(self.port))
 
             with socket.create_connection(address, timeout=3) as sk:
-                print(f"Connection successful: {self.addr}:{self.port}")
+                logging.info(f"Connection successful: {self.addr}:{self.port}")
                 return 0
 
         except socket.error as e:
-            print(f"Connection failed: {self.addr}:{self.port}, Error: {e}")
+            logging.error(f"Connection failed: {self.addr}:{self.port}, Socket error: {e}")
             return -1
         except Exception as e:
-            print(f"Error during validation: {e}")
+            logging.error(f"Error during validation: {e}")
             return -1
